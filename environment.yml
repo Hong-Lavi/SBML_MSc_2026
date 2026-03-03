@@ -1,0 +1,21 @@
+name: sbml-msc
+channels:
+  - pytorch
+  - conda-forge
+  - defaults
+dependencies:
+  - python=3.10
+  - pip
+  - numpy=1.26
+  - pandas
+  - scikit-learn
+  - pyyaml
+  - matplotlib
+  - tqdm
+  - rich
+  - pytest
+  - rdkit
+  - pytorch
+  - torchvision
+  - pip:
+      - python-dotenv

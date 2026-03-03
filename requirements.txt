@@ -1,0 +1,2 @@
+# Optional: pip-only install
+# Prefer conda via environment.yml for this project.

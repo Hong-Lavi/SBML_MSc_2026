@@ -1,0 +1,6 @@
+seed: 123
+reproducibility:
+  deterministic: true
+paths:
+  results_dir: results
+  log_dir: docs/logs

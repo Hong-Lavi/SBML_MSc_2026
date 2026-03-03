@@ -1,0 +1,32 @@
+# Python
+__pycache__/
+*.py[cod]
+*.pyo
+*.pyd
+.pytest_cache/
+.mypy_cache/
+.ruff_cache/
+
+# Envs
+.venv/
+venv/
+.env/
+
+# Conda
+.conda/
+
+# OS
+.DS_Store
+Thumbs.db
+
+# Data & results (DO NOT COMMIT)
+data/raw/
+data/processed/
+results/
+docs/logs/
+
+# Notebooks (optional)
+*.ipynb
+
+# Archives
+_archive/
