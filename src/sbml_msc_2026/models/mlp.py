@@ -33,7 +33,8 @@ import torch.nn as nn
 class DDI_MLP(nn.Module):
     """
     DDI 예측용 MLP.
-
+    #nn.Module은 PyTorch의 모든 신경망 모듈의 기본 클래스다. nn.Module을 상속받으면 모델의 레이어와 파라미터를 쉽게 정의하고 관리할 수 있다. 
+    # 또한, 모델을 GPU로 이동시키거나 저장/로드하는 등의 편리한 기능도 제공한다.
     Parameters
     ----------
     input_dim : int
@@ -70,8 +71,25 @@ class DDI_MLP(nn.Module):
         #   shape 추적:
         #     Layer 0: (B, input_dim) → (B, hidden_dims[0])
         #     Layer k: (B, hidden_dims[k-1]) → (B, hidden_dims[k])
+        
+        layers: List[nn.Module] = []
+        in_dim = input_dim
+        for hidden_dim in hidden_dims:
+            layers.extend(
+                [
+                    nn.Linear(in_dim, hidden_dim),
+                    nn.BatchNorm1d(hidden_dim),
+                    nn.ReLU(),
+                    nn.Dropout(dropout),
+                ]
+            )
+            in_dim = hidden_dim
 
-        self.hidden = ...  # TODO M-1
+        self.hidden = nn.Sequential(*layers)
+        #왜 *layers인가?
+        # *는 리스트 언패킹 연산자다. nn.Sequential(*layers)는 layers리스트의 요소들을 개별 인자로 전달한다. 
+        # 예를 들어, layers가 [A, B, C]라면 nn.Sequential(*layers)는 nn.Sequential(A, B, C)와 같다. 
+        # 이렇게 하면 layers에 정의된 순서대로 Linear → BatchNorm1d → ReLU → Dropout 블록이 쌓인 MLP가 만들어진다.
 
         # TODO M-2: 마지막 hidden → num_classes로 매핑하는 출력 layer 정의.
         #   목표: hidden_dims[-1] → num_classes Linear layer 하나.
@@ -80,7 +98,7 @@ class DDI_MLP(nn.Module):
         #         CrossEntropyLoss = log_softmax + NLLLoss 를 내부적으로 수행.
         #         모델이 softmax를 또 하면 이중 적용 → gradient가 약해진다.
 
-        self.output_layer = ...  # TODO M-2
+        self.output_layer = nn.Linear(hidden_dims[-1], num_classes)  # TODO M-2
 
         # TODO M-3: 모든 Linear layer에 Xavier uniform 초기화를 적용하라.
         #   목표: self.apply(self._init_weights) 호출.
@@ -91,7 +109,7 @@ class DDI_MLP(nn.Module):
         #         He init은 ReLU에 최적이지만, BN이 있으면 초기화 민감도가 낮아져서
         #         Xavier도 잘 동작한다. 실무에서는 둘 다 실험하고 비교하는 것이 정석.
 
-        pass  # TODO M-3
+        self.apply(self._init_weights)  # TODO M-3
 
     @staticmethod
     def _init_weights(module: nn.Module) -> None:
@@ -103,7 +121,10 @@ class DDI_MLP(nn.Module):
         #   생각: bias=False인 Linear도 있을 수 있으므로
         #         module.bias is not None 체크 필수.
 
-        pass  # TODO M-4
+        if isinstance(module, nn.Linear):
+            nn.init.xavier_uniform_(module.weight)  # TODO M-4
+            if module.bias is not None:
+                nn.init.zeros_(module.bias)
 
     def forward(self, x: torch.Tensor) -> torch.Tensor:
         """
@@ -125,7 +146,10 @@ class DDI_MLP(nn.Module):
         #         logits = self.output_layer(h)  # (B, num_classes)
         #   생각: nn.Sequential이 내부 layer를 순차 실행하므로 2줄이면 끝.
 
-        pass  # TODO M-5
+
+        h=self.hidden(x)
+        logits=self.output_layer(h)
+        return logits  # TODO M-5
 
     def count_parameters(self) -> int:
         """학습 가능한 파라미터 총 수를 반환한다."""
@@ -134,4 +158,4 @@ class DDI_MLP(nn.Module):
         #   생각: 이 값을 로그에 기록하면 모델 크기를 추적할 수 있다.
         #         논문 Table에 "# params" 항목으로 자주 보고된다.
 
-        pass  # TODO M-6
+        return sum(p.numel() for p in self.parameters() if p.requires_grad)  # TODO M-6
