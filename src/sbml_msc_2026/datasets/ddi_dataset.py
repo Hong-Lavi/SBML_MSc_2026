@@ -193,7 +193,7 @@ class DDIPairDataset(Dataset):
         row = self.df.iloc[idx]
         smiles_a = row["drug_a_smiles"]  # ← 수정
         smiles_b = row["drug_b_smiles"]  # ← 수정
-        label = row["interaction_typed"]      # ← 수정
+        label = row["interaction_type"]      # ← 수정
 
         # TODO 6-5: self.fp_dict에서 fp_a, fp_b를 lookup하라.
         #   주의: 불량 SMILES로 fp_dict에 없는 경우를 처리해야 한다.

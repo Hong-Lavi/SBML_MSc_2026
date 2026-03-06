@@ -250,11 +250,15 @@ def load_fp_cache(cache_path: str | Path) -> Optional[Dict[str, np.ndarray]]:
     #
     #   allow_pickle=False를 반드시 써야 한다.
     #   pickle이 허용되면 악성 .npz 파일로 임의 코드 실행이 가능하다.
-    data=np.load(cache_path, allow_pickle=False)  # allow_pickle=False는 보안상의 이유로, .npz 파일이 pickle 객체를 포함하는 것을 방지한다. 이렇게 하면 악성 .npz 파일로부터 임의 코드 실행 공격을 방지할 수 있다.
-    smiles_keys=data["smiles"]
-    fp_matrix=data["fps"]
-    return {smi: fp_matrix[i] for i, smi in enumerate(smiles_keys)}  # smi, i는 각각 smiles_keys의 요소와 인덱스다. fp_matrix[i]는 해당 인덱스에 대응하는 FP 배열이다. 이렇게 하면 {smiles: fp_array} 형태의 dict가 복원된다.
-
+    #try/except FileNotFoundError로 감싸서 None 반환
+    #네 코드 스타일 보면 try/except 쓰는 편이니까, np.load 호출부를 try/except FileNotFoundError로 감싸고 except 블록에서 return None 하면 된다. 직접 고쳐봐 — skeleton 버그가 아니라 TODO 구현 범위 내 로직이다.
+    try:
+        data = np.load(cache_path, allow_pickle=False)
+        smiles_keys = data["smiles"]
+        fp_matrix = data["fps"]
+        return {smi: fp_matrix[i] for i, smi in enumerate(smiles_keys)}  # ← 이 블록을 구현
+    except FileNotFoundError:
+        return None
 
 # -----------------------------------------------------------------------
 # 4) 통합 함수: 캐시 있으면 로드, 없으면 계산 후 저장
@@ -309,15 +313,11 @@ def get_or_compute_fp_dict(
     # TODO 4-1: load_fp_cache()를 호출하여 캐시를 시도하고,
     #   성공하면 로그를 남기고 반환하라.
     #   실패(None)하면 compute_fp_dict() → save_fp_cache() → 반환하라.
-    try :
-        cache=load_fp_cache(cache_path)
-        logging.info(f"Cache loaded from {cache_path}")
-        return cache
-    except Exception as e:
-        logging.warning(f"Failed to load cache or first run: {e}")
-        fp_dict=compute_fp_dict(smiles_list,radius=radius, n_bits=n_bits )
+    fp_dict = load_fp_cache(cache_path)
+    if fp_dict is None:          # ← except 대신 이걸로
+        fp_dict = compute_fp_dict(smiles_list, radius, n_bits)
         save_fp_cache(fp_dict, cache_path)
-        return fp_dict  # ← 이 블록을 구현
+    return fp_dict
 
 
 # -----------------------------------------------------------------------
