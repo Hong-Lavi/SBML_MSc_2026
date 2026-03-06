@@ -1,0 +1,63 @@
+# ============================================================
+# Day3 Config — DeepDDI-min MLP Training/Eval Pipeline
+# ============================================================
+# Day2 config를 확장. model, training, evaluation 섹션 추가.
+# 코드에서 이 값들을 cfg["section"]["key"]로 참조하여 사용한다.
+# ============================================================
+
+seed: 123
+
+reproducibility:
+  deterministic: true
+
+paths:
+  raw_ddi_csv: data/raw/dummy_ddi_pairs.csv
+  fp_cache_dir: data/processed/fingerprints
+  results_dir: results/day3
+  log_dir: docs/logs
+  checkpoint_dir: results/day3/checkpoints
+
+fingerprint:
+  type: morgan
+  radius: 2
+  n_bits: 2048
+
+pair_feature:
+  method: concat        # concat | sum | diff | symmetric
+
+split:
+  method: drug_aware    # drug_aware | random
+  train_ratio: 0.75
+  test_ratio: 0.25
+
+dataloader:
+  batch_size: 4
+  num_workers: 0
+  pin_memory: false
+
+# ── Day3 신규 섹션 ────────────────────────────────────────
+
+model:
+  type: mlp
+  hidden_dims: [512, 128]   # MLP hidden layer 차원 리스트
+  dropout: 0.3              # Dropout 확률 (0이면 비활성화)
+  activation: relu          # 현재 구현: relu만 지원
+
+training:
+  lr: 1.0e-3               # Adam 학습률
+  weight_decay: 1.0e-4     # L2 정규화 계수
+  max_epochs: 100           # 최대 학습 epoch 수
+
+  early_stopping:
+    patience: 10            # 개선 없이 허용할 epoch 수
+    monitor: macro_f1       # 모니터링 지표
+    mode: max               # max = 높을수록 좋음, min = 낮을수록 좋음
+
+  class_weight: auto        # "auto" = N/(C*N_c) 자동 계산, "none" = 균등 weight
+  val_fraction: 0.2         # train set 중 val로 분리할 비율
+
+evaluation:
+  metrics:
+    - macro_f1
+    - confusion_matrix
+    - classification_report
