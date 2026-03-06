@@ -1,0 +1,40 @@
+# ============================================================
+# Day2 Config — DeepDDI-min Feature Engineering Pipeline
+# ============================================================
+# 이 파일은 Day2 파이프라인의 모든 설정을 코드 바깥에서 관리한다.
+# 코드를 수정하지 않고도 FP 차원, batch size, split ratio 등을
+# 바꿔가며 실험할 수 있게 하는 것이 목적이다.
+# ============================================================
+
+seed: 123
+
+reproducibility:
+  deterministic: true
+
+paths:
+  raw_ddi_csv: data/raw/dummy_ddi_pairs.csv
+  fp_cache_dir: data/processed/fingerprints   # npz 캐시 저장 경로
+  results_dir: results/day2
+  log_dir: docs/logs
+
+fingerprint:
+  type: morgan          # morgan | rdkit | maccs 중 선택
+  radius: 2             # Morgan FP의 원자 이웃 탐색 반경
+  n_bits: 2048          # 해싱된 bit vector 길이
+
+pair_feature:
+  method: concat        # concat | sum | diff | symmetric
+  # symmetric = concat(sorted(fp_a, fp_b)) → (A,B)=(B,A) 보장
+
+split:
+  method: drug_aware    # drug_aware | random
+  # drug_aware: 동일 약물이 train/test에 동시 등장하지 않도록 분리
+  # random: pair 단위 무작위 (leakage 위험!)
+  train_ratio: 0.75
+  val_ratio: 0.0        # Day2에서는 val 생략, Day3에서 추가
+  test_ratio: 0.25
+
+dataloader:
+  batch_size: 4
+  num_workers: 0        # 로컬 디버깅 시 0 권장 (멀티프로세스 디버깅 어려움)
+  pin_memory: false     # GPU 없으면 false
